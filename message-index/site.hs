@@ -25,6 +25,8 @@ import System.FilePath
 import qualified Text.Pandoc as Pandoc
 import qualified Text.Pandoc.Definition as Pandoc
 
+import Debug.Trace
+
 main :: IO ()
 main = hakyll $ do
   -- Necessary to have GitHub Pages point at the right domain
@@ -68,6 +70,7 @@ main = hakyll $ do
           <&> \ident ->
             fromFilePath $ takeDirectory (takeDirectory (toFilePath ident)) </> "index.md"
       bread <- breadcrumbField ["index.html", thisMessage]
+
       pandocCompiler
         >>= loadAndApplyTemplate
           "templates/example.html"
@@ -75,12 +78,40 @@ main = hakyll $ do
               [ listField
                   "files"
                   ( mconcat
-                      [ indexlessUrlField "url",
-                        field "name" (pure . view _1 . itemBody),
-                        -- TODO: pick the right language
-                        field "beforeHighlighted" (maybe (pure "<not present>") (fmap (T.unpack . highlight "haskell" . T.pack) . fmap itemBody . load . itemIdentifier) . view _2 . itemBody),
-                        field "afterHighlighted" (maybe (pure "<not present>") (fmap (T.unpack . highlight "haskell" . T.pack) . fmap itemBody . load . itemIdentifier) . view _3 . itemBody)
-                      ]
+                      (
+                         let getName = view _1 . itemBody
+                             nameField = field "name" (pure . getName)
+                             beforeField =
+                              field "beforeHighlighted" $ \item -> do
+                                let name = getName item
+                                case view _2 $ itemBody item of
+                                  Nothing -> pure "<not present>"
+                                  Just beforeItem -> do
+                                    beforeText <- fmap itemBody $ load $ itemIdentifier beforeItem
+                                    let language =
+                                          case takeExtension name of
+                                            ".hs" -> "haskell"
+                                            _ -> ""
+                                    pure $ T.unpack $ highlight language $ T.pack $ beforeText
+                             afterField =
+                              field "afterHighlighted" $ \item -> do
+                                let name = getName item
+                                case view _2 $ itemBody item of
+                                  Nothing -> pure "<not present>"
+                                  Just afterItem -> do
+                                    afterText <- fmap itemBody $ load $ itemIdentifier afterItem
+                                    let language =
+                                          case takeExtension name of
+                                            ".hs" -> "haskell"
+                                            _ -> ""
+                                    pure $ T.unpack $ highlight language $ T.pack $ afterText
+                         in 
+                         
+                       [ indexlessUrlField "url",
+                         nameField,
+                         beforeField,
+                         afterField 
+                      ])
                   )
                   (return files),
                 defaultContext
