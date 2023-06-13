@@ -18,14 +18,13 @@ import Data.Maybe (fromMaybe, listToMaybe, mapMaybe)
 import Data.Monoid (mappend)
 import qualified Data.Text as T
 import Data.Traversable
+import Debug.Trace
 import Hakyll
 import Lens.Micro (_1, _2, _3)
 import Lens.Micro.Extras (view)
 import System.FilePath
 import qualified Text.Pandoc as Pandoc
 import qualified Text.Pandoc.Definition as Pandoc
-
-import Debug.Trace
 
 main :: IO ()
 main = hakyll $ do
@@ -78,32 +77,29 @@ main = hakyll $ do
               [ listField
                   "files"
                   ( mconcat
-                      (
-                         let getName = view _1 . itemBody
-                             nameField = field "name" (pure . getName)
+                      ( let getName = view _1 . itemBody
+                            nameField = field "name" (pure . getName)
 
-                             highlightField ident lens = field ident $ \item -> do
-                                let name = getName item
-                                case lens $ itemBody item of
-                                  Nothing -> pure "<not present>"
-                                  Just exampleItem -> do
-                                    exampleText <- fmap itemBody $ load $ itemIdentifier exampleItem
-                                    let language =
-                                          case takeExtension name of
-                                            ".hs" -> "haskell"
-                                            _ -> ""
-                                    pure $ T.unpack $ highlight language $ T.pack $ exampleText
+                            highlightField ident lens = field ident $ \item -> do
+                              let name = getName item
+                              case lens $ itemBody item of
+                                Nothing -> pure "<not present>"
+                                Just exampleItem -> do
+                                  exampleText <- fmap itemBody $ load $ itemIdentifier exampleItem
+                                  let language =
+                                        case takeExtension name of
+                                          ".hs" -> "haskell"
+                                          _ -> ""
+                                  pure $ T.unpack $ highlight language $ T.pack $ exampleText
 
-                             beforeField = highlightField "beforeHighlighted" (view _2) 
-                             afterField = highlightField "afterHighlighted" (view _3)                      
-
-                         in 
-                         
-                       [ indexlessUrlField "url",
-                         nameField,
-                         beforeField,
-                         afterField 
-                      ])
+                            beforeField = highlightField "beforeHighlighted" (view _2)
+                            afterField = highlightField "afterHighlighted" (view _3)
+                         in [ indexlessUrlField "url",
+                              nameField,
+                              beforeField,
+                              afterField
+                            ]
+                      )
                   )
                   (return files),
                 defaultContext
