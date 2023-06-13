@@ -81,30 +81,22 @@ main = hakyll $ do
                       (
                          let getName = view _1 . itemBody
                              nameField = field "name" (pure . getName)
-                             beforeField =
-                              field "beforeHighlighted" $ \item -> do
+
+                             highlightField ident lens = field ident $ \item -> do
                                 let name = getName item
-                                case view _2 $ itemBody item of
+                                case lens $ itemBody item of
                                   Nothing -> pure "<not present>"
-                                  Just beforeItem -> do
-                                    beforeText <- fmap itemBody $ load $ itemIdentifier beforeItem
+                                  Just exampleItem -> do
+                                    exampleText <- fmap itemBody $ load $ itemIdentifier exampleItem
                                     let language =
                                           case takeExtension name of
                                             ".hs" -> "haskell"
                                             _ -> ""
-                                    pure $ T.unpack $ highlight language $ T.pack $ beforeText
-                             afterField =
-                              field "afterHighlighted" $ \item -> do
-                                let name = getName item
-                                case view _2 $ itemBody item of
-                                  Nothing -> pure "<not present>"
-                                  Just afterItem -> do
-                                    afterText <- fmap itemBody $ load $ itemIdentifier afterItem
-                                    let language =
-                                          case takeExtension name of
-                                            ".hs" -> "haskell"
-                                            _ -> ""
-                                    pure $ T.unpack $ highlight language $ T.pack $ afterText
+                                    pure $ T.unpack $ highlight language $ T.pack $ exampleText
+
+                             beforeField = highlightField "beforeHighlighted" (view _2) 
+                             afterField = highlightField "afterHighlighted" (view _3)                      
+
                          in 
                          
                        [ indexlessUrlField "url",
