@@ -82,7 +82,7 @@ main = hakyll $ do
 
                             highlightField ident lens = field ident $ \item -> do
                               let name = getName item
-                              case lens $ itemBody item of
+                              case view lens $ itemBody item of
                                 Nothing -> pure "<not present>"
                                 Just exampleItem -> do
                                   exampleText <- fmap itemBody $ load $ itemIdentifier exampleItem
@@ -92,8 +92,8 @@ main = hakyll $ do
                                           _ -> ""
                                   pure $ T.unpack $ highlight language $ T.pack $ exampleText
 
-                            beforeField = highlightField "beforeHighlighted" (view _2)
-                            afterField = highlightField "afterHighlighted" (view _3)
+                            beforeField = highlightField "beforeHighlighted" _2
+                            afterField = highlightField "afterHighlighted" _3
                          in [ indexlessUrlField "url",
                               nameField,
                               beforeField,
